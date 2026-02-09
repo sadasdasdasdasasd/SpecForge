@@ -192,6 +192,7 @@ class OnlineEagle3Model(Eagle3Model):
             inputs_embeds = inputs_embeds.to(hidden_states.dtype)
 
             # Step 5.2: run the draft model backbone
+            print(f'=====================hidden_states{torch.sum(hidden_states)}')
             hidden_states_out = self.draft_model.backbone(
                 input_embeds=inputs_embeds,
                 hidden_states=hidden_states,
@@ -229,6 +230,7 @@ class OnlineEagle3Model(Eagle3Model):
                 position_mask = padding(position_mask, left=False)
                 loss_mask = padding(loss_mask, left=False)
                 # Flex attention mask shirnking is handled inside attention module
+        # print(f"{plosses=}, {vlosses=}, {acces=}")
         return plosses, vlosses, acces
 
 
@@ -485,6 +487,7 @@ class QwenVLOnlineEagle3Model(Eagle3Model):
             inputs_embeds = inputs_embeds.to(hidden_states.dtype)
 
             # Step 5.2: run the draft model backbone
+            print(f'=====================hidden_states{torch.sum(hidden_states)}')
             hidden_states_out = self.draft_model.backbone(
                 input_embeds=inputs_embeds,
                 hidden_states=hidden_states,
@@ -545,7 +548,7 @@ def _compute_target_p_padded(target, t2d, loss_mask, length):
         return target_p_padded, position_mask
 
 
-@torch.compile(dynamic=None)
+# @torch.compile(dynamic=None)
 def _compute_target_p(target, t2d, loss_mask):
     target_head = target
     target_max_token = target_head.argmax(-1)
@@ -559,8 +562,12 @@ def _compute_target_p(target, t2d, loss_mask):
     return target_p, position_mask
 
 
-@torch.compile(dynamic=None)
+# @torch.compile(dynamic=None)
 def _compute_metric_acc(logits, target_p, position_mask, loss_mask):
+    # print(f"DEBUG: logits shape: {logits.shape}")
+    # print(f"DEBUG: target_p shape: {target_p.shape}")
+    # if position_mask is not None:
+    #     print(f"DEBUG: position_mask shape: {position_mask.shape}")
     return (
         (logits.argmax(-1) == target_p.argmax(-1)) * position_mask.squeeze(-1)
     ).sum() / loss_mask.sum().clamp_min(1e-6)
